@@ -28,6 +28,8 @@ func main() {
 
 	appMode := applicationMode(*mode)
 
+	fmt.Printf("App started in %v mode\n", appMode)
+
 	if appMode != create && appMode != load {
 		fmt.Fprintln(os.Stderr, "Usage: go run main.go -mode create|load < source.(txt|bf)")
 		os.Exit(1)
@@ -51,15 +53,46 @@ func main() {
 			os.Exit(1)
 		}
 
-		bloomFilter := bf.New(probability, uint64(len(dataset)))
-		fmt.Printf("Created %v\n", bloomFilter)
-		bloomFilter.RunOver(dataset)
-		fmt.Printf("After runover - %v\n", bloomFilter)
+		bloomFilterFactory := bf.New(probability, uint64(len(dataset)))
+		fmt.Printf("Created %v\n", bloomFilterFactory)
+		bloomFilterFactory.RunOver(dataset)
+		fmt.Printf("After runover - %v\n", bloomFilterFactory)
+
+		bloomFilter := bloomFilterFactory.GetBloomFilter()
+
+		if err := os.WriteFile("filter.txt", bloomFilter.Save(), 0666); err != nil {
+			fmt.Fprintln(os.Stderr, "Could not save the bloom filter")
+			os.Exit(1)
+		}
 
 	}
 
 	if appMode == load {
-		fmt.Fprintln(os.Stderr, "Have not implemented load (yet)")
+		scanner := bufio.NewScanner(os.Stdin)
+		var bloomFilterBytes [][]byte
+		for {
+			scanner.Scan()
+			databyteLine := scanner.Bytes()
+			if len(databyteLine) == 0 {
+				break
+			}
+			bloomFilterBytes = append(bloomFilterBytes, databyteLine)
+		}
+
+		err := scanner.Err()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Could not read datasource from stdin")
+			os.Exit(1)
+		}
+
+		bloomFilter, err := bf.Load(bloomFilterBytes[0])
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
+			os.Exit(1)
+		}
+
+		fmt.Printf("The bloomFilter does not contain func: %v", bloomFilter.MayContain([]byte("func")))
+
 	}
 
 }
