@@ -15,6 +15,10 @@ type bloomFilter struct {
 	hashFns  []func([]byte) uint64
 }
 
+func (bF *bloomFilter) String() string {
+	return fmt.Sprintf("bloomFilter[bitArray=(length=%d, setbitcount=%d)]", len(bF.bitArray), setCount(bF.bitArray))
+}
+
 type bloomFilterFactory struct {
 	bloomFilter
 	probability   float64
@@ -22,12 +26,12 @@ type bloomFilterFactory struct {
 }
 
 func (bF *bloomFilterFactory) String() string {
-	return fmt.Sprintf("bloomFilterFactory[probability=%v, numberOfItems=%v, bitArray=(length=%d, setbitcount=%d)]", bF.probability, bF.numberOfItems, len(bF.bitArray), bF.setCount())
+	return fmt.Sprintf("bloomFilterFactory[probability=%v, numberOfItems=%v, bitArray=(length=%d, setbitcount=%d)]", bF.probability, bF.numberOfItems, len(bF.bitArray), setCount(bF.bitArray))
 }
 
-func (bF *bloomFilterFactory) setCount() uint64 {
+func setCount(bitArray []bool) uint64 {
 	count := uint64(0)
-	for _, bit := range bF.bitArray {
+	for _, bit := range bitArray {
 		if bit == true {
 			count += 1
 		}
@@ -59,7 +63,7 @@ func New(probability float64, numberOfitems uint64) BloomFilterFactory {
 
 func (bF *bloomFilterFactory) RunOver(dataset [][]byte) {
 	for _, obj := range dataset {
-		go bF.applyObject(obj)
+		bF.applyObject(obj)
 	}
 }
 

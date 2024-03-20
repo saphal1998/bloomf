@@ -3,7 +3,6 @@ package bf
 import (
 	"errors"
 	"fmt"
-	"math"
 	"strconv"
 )
 
@@ -39,6 +38,7 @@ func (bF *bloomFilter) setupBloomFilter(numberOfBits uint64) {
 }
 
 func Load(rawBytes []byte) (BloomFilter, error) {
+	fmt.Printf("Received %v\n", string(rawBytes))
 	// Check file header
 	if len(rawBytes) < 2 || (rawBytes[0] != 'B' && rawBytes[1] != 'F') {
 		return nil, errors.New("Invalid bloomFilter")
@@ -78,50 +78,30 @@ func Load(rawBytes []byte) (BloomFilter, error) {
 	}
 	rawBytes = rawBytes[8:]
 
+	// For the carriage return
+	rawBytes = rawBytes[2:]
+
 	filter := &bloomFilter{}
 	filter.setupBloomFilter(bitArraySize)
-
-	for i := uint64(0); i <= bitArraySize; i++ {
-		dataByte := rawBytes[i]
-		go filter.memCopyByte(dataByte, i*8)
-	}
+	filter.bitArray = bytesToBools(rawBytes)
 
 	return filter, nil
 }
 
-func (bF *bloomFilter) memCopyByte(rawByte byte, startIdx uint64) {
-	firstBit := rawByte&0b1 == 0b1
-	secondBit := (rawByte>>1)&0b1 == 0b1
-	thirdBit := (rawByte>>2)&0b1 == 0b1
-	fourthBit := (rawByte>>3)&0b1 == 0b1
-	fifthBit := (rawByte>>4)&0b1 == 0b1
-	sixthBit := (rawByte>>5)&0b1 == 0b1
-	seventhBit := (rawByte>>6)&0b1 == 0b1
-	eighthBit := (rawByte>>7)&0b1 == 0b1
-
-	for idx, value := range []bool{
-		firstBit,
-		secondBit,
-		thirdBit,
-		fourthBit,
-		fifthBit,
-		sixthBit,
-		seventhBit,
-		eighthBit,
-	} {
-
-		offset := startIdx + uint64(idx)
-		if offset >= uint64(len(bF.bitArray)) {
-			return
+func bytesToBools(b []byte) []bool {
+	t := make([]bool, 8*len(b))
+	for i, x := range b {
+		for j := 0; j < 8; j++ {
+			if (x<<uint(j))&0x80 == 0x80 {
+				t[8*i+j] = true
+			}
 		}
-
-		bF.bitArray[offset] = value
-
 	}
+	return t
 }
 
 func (bF *bloomFilter) Save() []byte {
-	rawBytes := make([]byte, 2+2+2+8+len(bF.bitArray))
+	rawBytes := make([]byte, 0)
 
 	header := make([]byte, 2)
 	header[0] = 'B'
@@ -139,42 +119,32 @@ func (bF *bloomFilter) Save() []byte {
 	rawBytes = append(rawBytes, version[:]...)
 
 	bitArrayCount := make([]byte, 8)
-	actualCount := len(bF.bitArray)
+	actualCount := (len(bF.bitArray) + 7) / 8
 	actualNumberAsString := fmt.Sprintf("%08d", actualCount)
 	for idx, ch := range actualNumberAsString {
 		bitArrayCount[idx] = byte(ch)
 	}
 	rawBytes = append(rawBytes, bitArrayCount[:]...)
 
-	bitArrayAsByteArray := bF.constructByteArray()
+	carriageReturn := make([]byte, 2)
+	carriageReturn[0] = '\r'
+	carriageReturn[1] = '\n'
+	rawBytes = append(rawBytes, carriageReturn[:]...)
+
+	bitArrayAsByteArray := boolsToBytes(bF.bitArray)
 	rawBytes = append(rawBytes, bitArrayAsByteArray[:]...)
+
+	fmt.Printf("Returning %v\n", string(rawBytes))
 
 	return rawBytes
 }
 
-func (bF *bloomFilter) constructByteArray() []byte {
-	byteArrayLength := len(bF.bitArray) / 8
-	if len(bF.bitArray)%8 != 0 {
-		byteArrayLength += 1
-	}
-	returnBytes := make([]byte, byteArrayLength)
-
-	for i := 0; i < byteArrayLength*8; i += 8 {
-
-		constructedByte := 0
-
-		for power := 0; power < 8; power++ {
-			if i+power < len(bF.bitArray) {
-				bit := bF.bitArray[i]
-				if bit {
-					constructedByte += int(math.Pow(2, float64(power)))
-				}
-			}
-
+func boolsToBytes(t []bool) []byte {
+	b := make([]byte, (len(t)+7)/8)
+	for i, x := range t {
+		if x {
+			b[i/8] |= 0x80 >> uint(i%8)
 		}
-
-		returnBytes = append(returnBytes, byte(constructedByte))
 	}
-
-	return returnBytes
+	return b
 }

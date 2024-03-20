@@ -59,8 +59,11 @@ func main() {
 		fmt.Printf("After runover - %v\n", bloomFilterFactory)
 
 		bloomFilter := bloomFilterFactory.GetBloomFilter()
+		bytesSaved := bloomFilter.Save()
 
-		if err := os.WriteFile("filter.txt", bloomFilter.Save(), 0666); err != nil {
+		fmt.Printf("Size of filter: %d bytes", len(bytesSaved))
+
+		if err := os.WriteFile("filter.txt", bytesSaved, 0666); err != nil {
 			fmt.Fprintln(os.Stderr, "Could not save the bloom filter")
 			os.Exit(1)
 		}
@@ -69,14 +72,14 @@ func main() {
 
 	if appMode == load {
 		scanner := bufio.NewScanner(os.Stdin)
-		var bloomFilterBytes [][]byte
+		var bloomFilterBytes []byte
 		for {
 			scanner.Scan()
 			databyteLine := scanner.Bytes()
 			if len(databyteLine) == 0 {
 				break
 			}
-			bloomFilterBytes = append(bloomFilterBytes, databyteLine)
+			bloomFilterBytes = append(bloomFilterBytes, databyteLine[:]...)
 		}
 
 		err := scanner.Err()
@@ -85,13 +88,19 @@ func main() {
 			os.Exit(1)
 		}
 
-		bloomFilter, err := bf.Load(bloomFilterBytes[0])
+		fmt.Printf("Size of filter read: %d bytes", len(bloomFilterBytes))
+
+		bloomFilter, err := bf.Load(bloomFilterBytes)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
 			os.Exit(1)
 		}
 
-		fmt.Printf("The bloomFilter does not contain func: %v", bloomFilter.MayContain([]byte("func")))
+		fmt.Printf("Created %v\n", bloomFilter)
+
+		word := "saphal"
+
+		fmt.Printf("The filter contains the word %v: %v", word, bloomFilter.MayContain([]byte(word)))
 
 	}
 
