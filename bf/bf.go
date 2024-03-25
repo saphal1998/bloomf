@@ -22,9 +22,12 @@ func (bF *bloomFilter) MayContain(data []byte) bool {
 	return false
 }
 
-func (bF *bloomFilter) safeHash(fn func([]byte) uint64) func([]byte) uint64 {
+func (bF *bloomFilter) safeHash(_ string, fn func([]byte) uint64) func([]byte) uint64 {
 	return func(b []byte) uint64 {
-		return fn(b) % uint64(len(bF.bitArray))
+		original := fn(b)
+		amended := original % uint64(len(bF.bitArray))
+
+		return amended
 	}
 }
 
@@ -32,13 +35,12 @@ func (bF *bloomFilter) setupBloomFilter(numberOfBits uint64) {
 	bF.bitArray = make([]bool, numberOfBits)
 
 	bF.hashFns = []func([]byte) uint64{
-		bF.safeHash(fnv1Hash),
-		bF.safeHash(fnv1aHash),
+		bF.safeHash("fnv1Hash", fnv1Hash),
+		bF.safeHash("fnv1aHash", fnv1aHash),
 	}
 }
 
 func Load(rawBytes []byte) (BloomFilter, error) {
-	fmt.Printf("Received %v\n", string(rawBytes))
 	// Check file header
 	if len(rawBytes) < 2 || (rawBytes[0] != 'B' && rawBytes[1] != 'F') {
 		return nil, errors.New("Invalid bloomFilter")
@@ -71,7 +73,7 @@ func Load(rawBytes []byte) (BloomFilter, error) {
 		return nil, errors.New("Invalid bloomFilter bit array count: No bit array count found")
 	}
 
-	// TODO: A maximum of 2^16 hash functions can be used
+	// TODO: A maximum of 2^64 bit array size is permitted
 	bitArraySize, err := strconv.ParseUint(string(rawBytes[:8]), 10, 64)
 	if err != nil {
 		return nil, errors.New("Invalid bloomFilter bit array count: Could not determine the bit array count")
@@ -79,7 +81,8 @@ func Load(rawBytes []byte) (BloomFilter, error) {
 	rawBytes = rawBytes[8:]
 
 	// For the carriage return
-	rawBytes = rawBytes[2:]
+	// Note: We do not need this since the scanner merely skips it for us, see the SplitFunc of the BFScanner
+	// rawBytes = rawBytes[2:]
 
 	filter := &bloomFilter{}
 	filter.setupBloomFilter(bitArraySize)
@@ -116,7 +119,7 @@ func (bF *bloomFilter) Save() []byte {
 	hashFnCount := make([]byte, 2)
 	hashFnCount[0] = '0'
 	hashFnCount[1] = '2'
-	rawBytes = append(rawBytes, version[:]...)
+	rawBytes = append(rawBytes, hashFnCount[:]...)
 
 	bitArrayCount := make([]byte, 8)
 	actualCount := (len(bF.bitArray) + 7) / 8
@@ -133,8 +136,6 @@ func (bF *bloomFilter) Save() []byte {
 
 	bitArrayAsByteArray := boolsToBytes(bF.bitArray)
 	rawBytes = append(rawBytes, bitArrayAsByteArray[:]...)
-
-	fmt.Printf("Returning %v\n", string(rawBytes))
 
 	return rawBytes
 }

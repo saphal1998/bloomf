@@ -71,7 +71,7 @@ func main() {
 	}
 
 	if appMode == load {
-		scanner := bufio.NewScanner(os.Stdin)
+		scanner := bf.BFScanner(os.Stdin)
 		var bloomFilterBytes []byte
 		for {
 			scanner.Scan()
@@ -101,7 +101,6 @@ func main() {
 		word := "saphal"
 
 		fmt.Printf("The filter contains the word %v: %v", word, bloomFilter.MayContain([]byte(word)))
-
 	}
 
 }

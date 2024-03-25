@@ -16,7 +16,8 @@ type bloomFilter struct {
 }
 
 func (bF *bloomFilter) String() string {
-	return fmt.Sprintf("bloomFilter[bitArray=(length=%d, setbitcount=%d)]", len(bF.bitArray), setCount(bF.bitArray))
+	setBits := setCount(bF.bitArray)
+	return fmt.Sprintf("bloomFilter[bitArray=(length=%d, setbitcount=%d[%v])]", len(bF.bitArray), len(setBits), setBits)
 }
 
 type bloomFilterFactory struct {
@@ -26,17 +27,17 @@ type bloomFilterFactory struct {
 }
 
 func (bF *bloomFilterFactory) String() string {
-	return fmt.Sprintf("bloomFilterFactory[probability=%v, numberOfItems=%v, bitArray=(length=%d, setbitcount=%d)]", bF.probability, bF.numberOfItems, len(bF.bitArray), setCount(bF.bitArray))
+	return fmt.Sprintf("bloomFilterFactory[probability=%v, numberOfItems=%v, bloomFilter=(%v)]", bF.probability, bF.numberOfItems, bF.GetBloomFilter())
 }
 
-func setCount(bitArray []bool) uint64 {
-	count := uint64(0)
-	for _, bit := range bitArray {
+func setCount(bitArray []bool) (indices []uint64) {
+	setBits := make([]uint64, 0)
+	for idx, bit := range bitArray {
 		if bit == true {
-			count += 1
+			setBits = append(setBits, uint64(idx))
 		}
 	}
-	return count
+	return setBits
 }
 
 func (bF *bloomFilterFactory) setup() {
