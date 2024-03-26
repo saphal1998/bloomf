@@ -54,14 +54,12 @@ func main() {
 		}
 
 		bloomFilterFactory := bf.New(probability, uint64(len(dataset)))
-		fmt.Printf("Created %v\n", bloomFilterFactory)
 		bloomFilterFactory.RunOver(dataset)
-		fmt.Printf("After runover - %v\n", bloomFilterFactory)
 
 		bloomFilter := bloomFilterFactory.GetBloomFilter()
 		bytesSaved := bloomFilter.Save()
 
-		fmt.Printf("Size of filter: %d bytes", len(bytesSaved))
+		fmt.Printf("Size of filter: %d, bytes: %d\n", bloomFilter.FilterSize(), len(bytesSaved))
 
 		if err := os.WriteFile("filter.txt", bytesSaved, 0666); err != nil {
 			fmt.Fprintln(os.Stderr, "Could not save the bloom filter")
@@ -84,11 +82,11 @@ func main() {
 
 		err := scanner.Err()
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "Could not read datasource from stdin")
+			fmt.Fprintln(os.Stderr, err.Error())
 			os.Exit(1)
 		}
 
-		fmt.Printf("Size of filter read: %d bytes", len(bloomFilterBytes))
+		fmt.Printf("Size of filter read: %d bytes\n", len(bloomFilterBytes))
 
 		bloomFilter, err := bf.Load(bloomFilterBytes)
 		if err != nil {
@@ -96,11 +94,9 @@ func main() {
 			os.Exit(1)
 		}
 
-		fmt.Printf("Created %v\n", bloomFilter)
+		word := "Abasgi"
 
-		word := "saphal"
-
-		fmt.Printf("The filter contains the word %v: %v", word, bloomFilter.MayContain([]byte(word)))
+		fmt.Printf("The filter will not contain the word %v: %v", word, bloomFilter.WillNotContain([]byte(word)))
 	}
 
 }

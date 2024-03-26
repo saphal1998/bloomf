@@ -8,22 +8,22 @@ import (
 )
 
 type BloomFilter interface {
-	MayContain([]byte) bool
+	WillNotContain([]byte) bool
 	Save() []byte
 	Equal(BloomFilter) bool
 	FilterSize() uint64
 	SetIndices() []uint64
 }
 
-func (bF *bloomFilter) MayContain(data []byte) bool {
+func (bF *bloomFilter) WillNotContain(data []byte) bool {
 	for _, hashFn := range bF.hashFns {
 		idx := hashFn(data)
 		if bF.bitArray[idx] == true {
-			return true
+			return false
 		}
 	}
 
-	return false
+	return true
 }
 
 func (bF *bloomFilter) safeHash(_ string, fn func([]byte) uint64) func([]byte) uint64 {

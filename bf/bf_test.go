@@ -34,7 +34,7 @@ func TestPresenceOfByteStream(t *testing.T) {
 	t.Logf("bloomFilter %v\n", bloomFilter)
 
 	for idx, databytes := range itemsToBytes {
-		if bloomFilter.MayContain(databytes) != true {
+		if bloomFilter.WillNotContain(databytes) != false {
 			t.Fatalf("expected %s to be in the bloom filter, but it was not", items[idx])
 		}
 	}
