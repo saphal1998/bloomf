@@ -3,12 +3,16 @@ package bf
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"strconv"
 )
 
 type BloomFilter interface {
 	MayContain([]byte) bool
 	Save() []byte
+	Equal(BloomFilter) bool
+	FilterSize() uint64
+	SetIndices() []uint64
 }
 
 func (bF *bloomFilter) MayContain(data []byte) bool {
@@ -86,7 +90,7 @@ func Load(rawBytes []byte) (BloomFilter, error) {
 
 	filter := &bloomFilter{}
 	filter.setupBloomFilter(bitArraySize)
-	filter.bitArray = bytesToBools(rawBytes)
+	filter.bitArray = bytesToBools(rawBytes)[:bitArraySize]
 
 	return filter, nil
 }
@@ -122,8 +126,7 @@ func (bF *bloomFilter) Save() []byte {
 	rawBytes = append(rawBytes, hashFnCount[:]...)
 
 	bitArrayCount := make([]byte, 8)
-	actualCount := (len(bF.bitArray) + 7) / 8
-	actualNumberAsString := fmt.Sprintf("%08d", actualCount)
+	actualNumberAsString := fmt.Sprintf("%08d", len(bF.bitArray))
 	for idx, ch := range actualNumberAsString {
 		bitArrayCount[idx] = byte(ch)
 	}
@@ -148,4 +151,24 @@ func boolsToBytes(t []bool) []byte {
 		}
 	}
 	return b
+}
+
+func (bF *bloomFilter) FilterSize() uint64 {
+	return uint64(len(bF.bitArray))
+}
+
+func (bF *bloomFilter) SetIndices() []uint64 {
+	indicies := make([]uint64, 0)
+
+	for idx, val := range bF.bitArray {
+		if val {
+			indicies = append(indicies, uint64(idx))
+		}
+	}
+
+	return indicies
+}
+
+func (bF *bloomFilter) Equal(otherBF BloomFilter) bool {
+	return otherBF.FilterSize() == bF.FilterSize() && reflect.DeepEqual(bF.SetIndices(), otherBF.SetIndices())
 }

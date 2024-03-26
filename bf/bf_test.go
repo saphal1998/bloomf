@@ -3,7 +3,6 @@ package bf_test
 import (
 	"bloomfilter/bf"
 	"os"
-	"reflect"
 	"testing"
 )
 
@@ -77,7 +76,7 @@ func TestBloomFilterSerialization(t *testing.T) {
 		byte('0'),
 		byte('0'),
 		byte('0'),
-		byte('2'),
+		byte('9'),
 		// Carriage Return
 		byte('\r'),
 		byte('\n'),
@@ -146,8 +145,6 @@ func TestBloomFilterDeserialization(t *testing.T) {
 		bloomFilterBytes = append(bloomFilterBytes, databytes...)
 	}
 
-	t.Log(bloomFilterBytes)
-
 	if err := scanner.Err(); err != nil {
 		t.Fatalf("Cannot perform test, could not scan the temporary file correctly")
 	}
@@ -157,7 +154,7 @@ func TestBloomFilterDeserialization(t *testing.T) {
 		t.Fatalf("Could not reconstruct bloom filter")
 	}
 
-	if !reflect.DeepEqual(reconstructedBloomFilter, originalBloomFilter) {
+	if !reconstructedBloomFilter.Equal(originalBloomFilter) {
 		t.Fatalf("Failed serialization, expected=%v, got=%v", originalBloomFilter, reconstructedBloomFilter)
 	}
 }
