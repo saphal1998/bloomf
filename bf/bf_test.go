@@ -160,7 +160,7 @@ func TestBloomFilterDeserialization(t *testing.T) {
 }
 
 func TestBFScanner(t *testing.T) {
-	data := "abcd\r\nefg"
+	data := "abcd\r\nefg\r\n"
 
 	f, err := os.CreateTemp("", "tmpfile-*.bf")
 	if err != nil {
@@ -188,7 +188,7 @@ func TestBFScanner(t *testing.T) {
 		dataBytes = append(dataBytes, fBytes...)
 	}
 
-	expectedResult := "abcdefg"
+	expectedResult := "abcdefg\r\n"
 
 	if string(dataBytes) != expectedResult {
 		t.Fatalf("expected=%v, got=%v", expectedResult, string(dataBytes))

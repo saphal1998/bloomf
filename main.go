@@ -57,9 +57,17 @@ func main() {
 		bloomFilterFactory.RunOver(dataset)
 
 		bloomFilter := bloomFilterFactory.GetBloomFilter()
+
+		// This is done to validate
+		for _, val := range dataset {
+			if bloomFilter.WillNotContain(val) != false {
+				fmt.Fprintf(os.Stderr, "Something went wrong with our bloom filter, it was trained on %v, but it says that it will never contain it\n", string(val))
+			}
+		}
+
 		bytesSaved := bloomFilter.Save()
 
-		fmt.Printf("Size of filter: %d, bytes: %d\n", bloomFilter.FilterSize(), len(bytesSaved))
+		fmt.Printf("Size of filter: %d, %v\n", bloomFilter.FilterSize(), bloomFilter)
 
 		if err := os.WriteFile("filter.txt", bytesSaved, 0666); err != nil {
 			fmt.Fprintln(os.Stderr, "Could not save the bloom filter")
@@ -94,9 +102,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		word := "Abasgi"
-
-		fmt.Printf("The filter will not contain the word %v: %v", word, bloomFilter.WillNotContain([]byte(word)))
+		fmt.Printf("Size of filter: %d, %v\n", bloomFilter.FilterSize(), bloomFilter)
 	}
 
 }
