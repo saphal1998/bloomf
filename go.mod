@@ -1,3 +1,3 @@
-module bloomfilter
+module github.com/saphal1998/bloomf
 
-go 1.22.1
+go 1.23.4

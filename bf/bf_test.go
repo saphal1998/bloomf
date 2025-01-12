@@ -1,9 +1,10 @@
 package bf_test
 
 import (
-	"bloomfilter/bf"
 	"os"
 	"testing"
+
+	"github.com/saphal1998/bloomf/bf"
 )
 
 func generateBloomFilter(items [][]byte, probability float64) bf.BloomFilter {

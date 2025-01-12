@@ -1,11 +1,12 @@
 package main
 
 import (
-	"bloomfilter/bf"
 	"bufio"
 	"flag"
 	"fmt"
 	"os"
+
+	"github.com/saphal1998/bloomf/bf"
 )
 
 type applicationMode string
